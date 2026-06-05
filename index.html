@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CargoExpress</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --brand: #FF4422;
+  --brand2: #FF6644;
+  --bg: #0C0C0C;
+  --bg2: #161616;
+  --bg3: #202020;
+  --bg4: #2A2A2A;
+  --text: #F0EDE8;
+  --text2: #999990;
+  --text3: #555550;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --green: #22C55E;
+  --blue: #3B82F6;
+  --yellow: #F59E0B;
+  --r: 14px;
+  --rs: 10px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { background:var(--bg); color:var(--text); font-family:'Space Grotesk',sans-serif; font-size:15px; line-height:1.5; min-height:100vh; overflow-x:hidden; }
+
+/* SPLASH */
+#splash {
+  position:fixed; inset:0; background:var(--bg); z-index:9999;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+.sp-title { font-size:38px; font-weight:700; letter-spacing:-1px; margin-bottom:6px; opacity:0; animation:fadeUp 0.5s ease 1.8s forwards; }
+.sp-title span { color:var(--brand); }
+.sp-sub { font-size:12px; color:var(--text3); letter-spacing:3px; text-transform:uppercase; opacity:0; animation:fadeUp 0.5s ease 2s forwards; }
+.sp-road {
+  position:absolute; bottom:0; left:0; right:0; height:100px;
+  background:var(--bg2); border-top:1px solid var(--border2); overflow:hidden;
+}
+.sp-road::after {
+  content:''; position:absolute; top:50%; left:-100%; right:-100%; height:3px;
+  background:repeating-linear-gradient(90deg,var(--brand) 0,var(--brand) 30px,transparent 30px,transparent 60px);
+  animation:road 0.35s linear infinite;
+}
+@keyframes road { to { transform:translateX(60px); } }
+.sp-truck {
+  position:absolute; bottom:50px; left:-200px;
+  animation:truckGo 2.8s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
+}
+@keyframes truckGo {
+  0%   { left:-200px; transform:rotate(0deg); }
+  38%  { left:calc(50% - 70px); transform:rotate(0deg); }
+  47%  { left:calc(50% - 70px); transform:rotate(-7deg); transform-origin:right bottom; }
+  56%  { left:calc(50% - 70px); transform:rotate(0deg); }
+  68%  { left:calc(50% - 70px); }
+  100% { left:110%; transform:rotate(0deg); }
+}
+.sp-dots { display:flex; gap:6px; position:absolute; bottom:20px; opacity:0; animation:fadeUp 0.4s ease 1.9s forwards; }
+.sp-dot { width:6px; height:6px; border-radius:50%; background:var(--brand); animation:dotb 0.9s ease-in-out infinite; }
+.sp-dot:nth-child(2) { animation-delay:0.15s; }
+.sp-dot:nth-child(3) { animation-delay:0.3s; }
+@keyframes dotb { 0%,100%{opacity:0.3;transform:scale(0.8)} 50%{opacity:1;transform:scale(1.3)} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+/* APP */
+#app { opacity:0; transition:opacity 0.4s ease; padding-bottom:70px; }
+#app.on { opacity:1; }
+
+/* HEADER */
+.hdr {
+  position:sticky; top:0; z-index:100;
+  background:rgba(12,12,12,0.9); backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  padding:14px 18px; display:flex; align-items:center; justify-content:space-between;
+}
+.hdr-logo { font-size:20px; font-weight:700; letter-spacing:-0.5px; }
+.hdr-logo span { color:var(--brand); }
+.hdr-ava {
+  width:34px; height:34px; border-radius:50%; background:var(--brand);
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:700; color:#fff; cursor:pointer;
+  transition:transform 0.15s;
+}
+.hdr-ava:active { transform:scale(0.9); }
+
+/* PAGES */
+.page { display:none; }
+.page.on { display:block; }
+
+/* HERO */
+.hero { padding:22px 18px 16px; background:linear-gradient(180deg,rgba(255,68,34,0.06) 0%,transparent 100%); }
+.hero-hi { font-size:13px; color:var(--text3); margin-bottom:2px; }
+.hero-name { font-size:26px; font-weight:700; letter-spacing:-0.5px; margin-bottom:16px; }
+.code-card {
+  background:var(--bg2); border:1px solid var(--border2); border-radius:var(--r);
+  padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+  position:relative; overflow:hidden;
+}
+.code-card::before { content:''; position:absolute; right:-10px; top:-10px; width:80px; height:80px; background:radial-gradient(circle,rgba(255,68,34,0.12),transparent 70%); }
+.code-lbl { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:3px; }
+.code-val { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:600; letter-spacing:3px; }
+.qr-btn {
+  width:44px; height:44px; background:var(--brand); border:none; border-radius:var(--rs);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+  transition:all 0.15s;
+}
+.qr-btn:active { background:#cc3318; transform:scale(0.9); }
+.qr-btn svg { width:20px; height:20px; fill:white; }
+
+/* STATS */
+.stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:0 18px 18px; }
+.stat { background:var(--bg2); border:1px solid var(--border); border-radius:var(--rs); padding:12px 10px; text-align:center; }
+.stat-n { font-size:22px; font-weight:700; line-height:1; margin-bottom:3px; }
+.stat-l { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:0.8px; }
+
+/* SECTION */
+.sec { padding:0 18px 22px; }
+.sec-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.sec-title { font-size:17px; font-weight:700; letter-spacing:-0.3px; }
+.sec-more { font-size:13px; color:var(--brand); cursor:pointer; }
+
+/* ORDER CARD */
+.ocard {
+  background:var(--bg2); border:1px solid var(--border); border-radius:var(--r);
+  padding:14px; margin-bottom:9px; cursor:pointer; transition:all 0.15s;
+}
+.ocard:active { transform:scale(0.98); border-color:var(--border2); }
+.ocard-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:10px; }
+.ocard-id { font-size:11px; color:var(--text3); margin-bottom:3px; }
+.ocard-name { font-size:15px; font-weight:600; max-width:190px; line-height:1.3; }
+.badge { display:inline-flex; align-items:center; gap:4px; padding:4px 9px; border-radius:20px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; flex-shrink:0; }
+.bp { background:rgba(245,158,11,0.15); color:#F59E0B; }
+.ba { background:rgba(59,130,246,0.15); color:#3B82F6; }
+.bs { background:rgba(139,92,246,0.15); color:#8B5CF6; }
+.bc { background:rgba(249,115,22,0.15); color:#F97316; }
+.br { background:rgba(20,184,166,0.15); color:#14B8A6; }
+.bd { background:rgba(34,197,94,0.15); color:#22C55E; }
+.bx { background:rgba(239,68,68,0.15); color:#EF4444; }
+
+.track { display:flex; gap:3px; margin-top:10px; }
+.trk { flex:1; height:3px; background:var(--bg4); border-radius:2px; }
+.trk.done { background:var(--green); }
+.trk.act { background:var(--brand); }
+
+.ometa { display:flex; gap:14px; margin-top:8px; }
+.ometa-i { font-size:12px; color:var(--text2); display:flex; align-items:center; gap:4px; }
+
+/* EMPTY */
+.empty { text-align:center; padding:36px 20px; background:var(--bg2); border:1px dashed var(--border2); border-radius:var(--r); }
+.empty-ico { font-size:40px; margin-bottom:10px; }
+.empty-t { font-size:17px; font-weight:700; margin-bottom:6px; }
+.empty-s { font-size:13px; color:var(--text2); }
+
+/* CALC */
+.calc { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:18px; }
+.clbl { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:7px; }
+.cinp {
+  width:100%; background:var(--bg3); border:1px solid var(--border);
+  border-radius:var(--rs); padding:11px 14px; color:var(--text);
+  font-family:'Space Grotesk',sans-serif; font-size:15px; outline:none;
+  transition:border-color 0.2s; margin-bottom:14px;
+}
+.cinp:focus { border-color:var(--brand); }
+.cinp::placeholder { color:var(--text3); }
+.cresult {
+  background:var(--brand); border-radius:var(--rs); padding:14px 16px;
+  display:flex; align-items:center; justify-content:space-between; margin-top:4px;
+}
+.cresult-lbl { font-size:12px; color:rgba(255,255,255,0.75); margin-bottom:2px; }
+.cresult-formula { font-size:11px; color:rgba(255,255,255,0.55); }
+.cresult-val { font-size:28px; font-weight:700; color:#fff; font-family:'JetBrains Mono',monospace; }
+.ctags { display:flex; flex-wrap:wrap; gap:7px; margin-top:14px; }
+.ctag {
+  background:var(--bg3); border:1px solid var(--border); border-radius:20px;
+  padding:6px 13px; font-size:12px; color:var(--text2); cursor:pointer; transition:all 0.15s;
+}
+.ctag:active { border-color:var(--brand); color:var(--brand); }
+
+/* CHAT */
+.chat-wrap { display:flex; flex-direction:column; height:calc(100vh - 140px); }
+.chat-msgs { flex:1; overflow-y:auto; padding:16px 18px; display:flex; flex-direction:column; gap:10px; }
+.chat-msgs::-webkit-scrollbar { width:3px; }
+.chat-msgs::-webkit-scrollbar-track { background:transparent; }
+.chat-msgs::-webkit-scrollbar-thumb { background:var(--bg4); border-radius:2px; }
+.msg { max-width:82%; display:flex; flex-direction:column; }
+.msg.user { align-self:flex-end; align-items:flex-end; }
+.msg.bot { align-self:flex-start; align-items:flex-start; }
+.msg-bubble {
+  padding:10px 14px; border-radius:16px; font-size:14px; line-height:1.5;
+  word-break:break-word;
+}
+.msg.user .msg-bubble { background:var(--brand); color:#fff; border-bottom-right-radius:4px; }
+.msg.bot .msg-bubble { background:var(--bg2); border:1px solid var(--border); border-bottom-left-radius:4px; }
+.msg-time { font-size:10px; color:var(--text3); margin-top:3px; padding:0 4px; }
+.chat-foot {
+  padding:10px 14px; background:rgba(12,12,12,0.95); backdrop-filter:blur(12px);
+  border-top:1px solid var(--border); display:flex; gap:8px; align-items:flex-end;
+}
+.chat-inp {
+  flex:1; background:var(--bg2); border:1px solid var(--border);
+  border-radius:22px; padding:10px 16px; color:var(--text);
+  font-family:'Space Grotesk',sans-serif; font-size:14px; outline:none;
+  resize:none; max-height:120px; line-height:1.4; transition:border-color 0.2s;
+}
+.chat-inp:focus { border-color:var(--brand); }
+.chat-inp::placeholder { color:var(--text3); }
+.chat-send {
+  width:40px; height:40px; background:var(--brand); border:none; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+  transition:all 0.15s;
+}
+.chat-send:active { background:#cc3318; transform:scale(0.9); }
+.chat-send svg { width:18px; height:18px; fill:white; margin-left:2px; }
+.typing { display:flex; gap:4px; padding:12px 14px; background:var(--bg2); border:1px solid var(--border); border-radius:16px; border-bottom-left-radius:4px; width:56px; }
+.typing span { width:7px; height:7px; border-radius:50%; background:var(--text3); animation:tp 1.2s ease-in-out infinite; }
+.typing span:nth-child(2) { animation-delay:0.2s; }
+.typing span:nth-child(3) { animation-delay:0.4s; }
+@keyframes tp { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+.chat-quick { display:flex; gap:7px; overflow-x:auto; padding:10px 14px 0; scrollbar-width:none; }
+.chat-quick::-webkit-scrollbar { display:none; }
+.qchip {
+  background:var(--bg3); border:1px solid var(--border2); border-radius:20px;
+  padding:7px 14px; font-size:12px; color:var(--text2); white-space:nowrap;
+  cursor:pointer; flex-shrink:0; transition:all 0.15s; font-family:'Space Grotesk',sans-serif;
+}
+.qchip:active { border-color:var(--brand); color:var(--brand); }
+
+/* PROFILE */
+.prof-hero {
+  background:var(--bg2); border-bottom:1px solid var(--border);
+  padding:22px 18px; text-align:center;
+}
+.prof-ava {
+  width:76px; height:76px; border-radius:50%; background:var(--brand);
+  display:flex; align-items:center; justify-content:center;
+  font-size:28px; font-weight:700; color:#fff; margin:0 auto 14px;
+  border:3px solid rgba(255,68,34,0.4); box-shadow:0 0 0 6px rgba(255,68,34,0.08);
+}
+.prof-name { font-size:20px; font-weight:700; margin-bottom:3px; }
+.prof-phone { font-size:14px; color:var(--text2); }
+.disc-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  background:rgba(34,197,94,0.12); color:var(--green);
+  border:1px solid rgba(34,197,94,0.25); border-radius:20px;
+  padding:5px 12px; font-size:12px; font-weight:600; margin-top:10px;
+}
+.ilist { padding:0 18px; }
+.irow {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 0; border-bottom:1px solid var(--border);
+}
+.irow:last-child { border:none; }
+.ikey { font-size:13px; color:var(--text3); }
+.ival { font-size:14px; font-weight:500; }
+
+/* NAV */
+.nav {
+  position:fixed; bottom:0; left:0; right:0;
+  background:rgba(12,12,12,0.96); backdrop-filter:blur(16px);
+  border-top:1px solid var(--border); display:flex;
+  padding:6px 0 max(6px,env(safe-area-inset-bottom)); z-index:100;
+}
+.nitem {
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:7px 4px; cursor:pointer; transition:all 0.15s;
+  background:none; border:none; color:var(--text3); font-family:'Space Grotesk',sans-serif;
+}
+.nitem.on { color:var(--brand); }
+.nitem svg { width:21px; height:21px; transition:transform 0.15s; }
+.nitem.on svg { transform:scale(1.1); }
+.nlbl { font-size:10px; font-weight:500; letter-spacing:0.5px; }
+
+/* MODAL */
+.moverlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px);
+  z-index:1000; display:flex; align-items:flex-end;
+  opacity:0; pointer-events:none; transition:opacity 0.25s;
+}
+.moverlay.on { opacity:1; pointer-events:all; }
+.modal {
+  background:var(--bg2); border-radius:22px 22px 0 0;
+  padding:20px 20px 32px; width:100%;
+  transform:translateY(100%); transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);
+  max-height:88vh; overflow-y:auto;
+}
+.moverlay.on .modal { transform:translateY(0); }
+.mhandle { width:34px; height:4px; background:var(--bg4); border-radius:2px; margin:0 auto 18px; }
+.mtitle { font-size:18px; font-weight:700; text-align:center; margin-bottom:18px; }
+
+/* QR */
+#qr-wrap { display:flex; justify-content:center; margin-bottom:16px; }
+#qr-canvas { border-radius:12px; border:5px solid #fff; }
+.qr-code-display {
+  text-align:center; font-family:'JetBrains Mono',monospace;
+  font-size:26px; font-weight:600; letter-spacing:4px;
+  background:var(--bg3); border-radius:var(--rs); padding:12px; margin-bottom:10px;
+}
+.mnote { font-size:12px; color:var(--text3); text-align:center; margin-bottom:18px; }
+
+/* BTN */
+.btn { width:100%; background:var(--bg3); border:1px solid var(--border); border-radius:var(--rs); padding:13px; color:var(--text); font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:500; cursor:pointer; transition:all 0.15s; }
+.btn:active { background:var(--bg4); }
+.btn-brand { background:var(--brand); border-color:transparent; color:#fff; }
+.btn-brand:active { background:#cc3318; }
+
+/* ORDER DETAIL */
+.dblock { background:var(--bg3); border-radius:var(--rs); padding:14px; margin-bottom:12px; }
+.drow { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.drow:last-child { border:none; padding-bottom:0; }
+.dkey { color:var(--text2); }
+.dval { font-weight:500; text-align:right; max-width:60%; }
+.tline { padding:4px 0; }
+.titem { display:flex; align-items:flex-start; gap:10px; padding:8px 0; position:relative; }
+.titem:not(:last-child)::after { content:''; position:absolute; left:14px; top:30px; bottom:0; width:1.5px; background:var(--border); }
+.tdot { width:28px; height:28px; border-radius:50%; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; background:var(--bg3); z-index:1; }
+.tdot.done { border-color:var(--green); background:rgba(34,197,94,0.1); }
+.tdot.act { border-color:var(--brand); background:rgba(255,68,34,0.1); animation:ring 2s infinite; }
+@keyframes ring { 0%,100%{box-shadow:0 0 0 0 rgba(255,68,34,0.3)} 50%{box-shadow:0 0 0 7px rgba(255,68,34,0)} }
+.ttxt { padding-top:3px; }
+.ttitle { font-size:13px; font-weight:500; }
+.tsub { font-size:11px; color:var(--text3); margin-top:1px; }
+
+/* NEWS */
+.ncard { background:var(--bg2); border:1px solid var(--border); border-left:3px solid var(--brand); border-radius:var(--r); padding:14px; margin-bottom:9px; }
+.ndate { font-size:11px; color:var(--text3); margin-bottom:4px; }
+.ntitle { font-size:14px; font-weight:600; margin-bottom:4px; }
+.ntext { font-size:12px; color:var(--text2); line-height:1.5; }
+
+/* SUPPORT */
+.supp {
+  background:rgba(255,68,34,0.06); border:1px solid rgba(255,68,34,0.2);
+  border-radius:var(--r); padding:18px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:all 0.15s;
+}
+.supp:active { transform:scale(0.98); }
+.supp-ico { width:44px; height:44px; background:var(--brand); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.supp-ico svg { width:22px; height:22px; fill:#fff; }
+.supp-t { font-size:15px; font-weight:600; margin-bottom:2px; }
+.supp-s { font-size:12px; color:var(--text2); }
+
+/* ANIM */
+@keyframes up { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.au { animation:up 0.35s ease forwards; opacity:0; }
+.au:nth-child(1){animation-delay:0.04s}
+.au:nth-child(2){animation-delay:0.08s}
+.au:nth-child(3){animation-delay:0.12s}
+.au:nth-child(4){animation-delay:0.16s}
+.au:nth-child(5){animation-delay:0.20s}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sp-title">Cargo<span>Express</span></div>
+  <div class="sp-sub">Китай · Душанбе · СНГ</div>
+  <div class="sp-road">
+    <div class="sp-truck">
+      <svg width="130" height="70" viewBox="0 0 130 70" fill="none">
+        <rect x="40" y="10" width="82" height="40" rx="3" fill="#FF4422"/>
+        <rect x="6" y="20" width="40" height="30" rx="3" fill="#CC3318"/>
+        <rect x="12" y="24" width="22" height="16" rx="2" fill="#1a2a3a" opacity="0.85"/>
+        <circle cx="10" cy="44" r="3" fill="#FFE066"/>
+        <line x1="62" y1="13" x2="62" y2="46" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+        <line x1="84" y1="13" x2="84" y2="46" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+        <line x1="106" y1="13" x2="106" y2="46" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+        <text x="83" y="34" text-anchor="middle" fill="white" font-family="sans-serif" font-size="7" font-weight="bold" opacity="0.85">CARGO EXPRESS</text>
+        <rect x="38" y="7" width="4" height="15" rx="2" fill="#666"/>
+        <circle cx="40" cy="5" r="3" fill="#444" opacity="0.5"/>
+        <circle cx="26" cy="55" r="10" fill="#111" stroke="#2a2a2a" stroke-width="2"/>
+        <circle cx="26" cy="55" r="5" fill="#222"/>
+        <circle cx="72" cy="55" r="10" fill="#111" stroke="#2a2a2a" stroke-width="2"/>
+        <circle cx="72" cy="55" r="5" fill="#222"/>
+        <circle cx="108" cy="55" r="10" fill="#111" stroke="#2a2a2a" stroke-width="2"/>
+        <circle cx="108" cy="55" r="5" fill="#222"/>
+      </svg>
+    </div>
+  </div>
+  <div class="sp-dots">
+    <div class="sp-dot"></div><div class="sp-dot"></div><div class="sp-dot"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="hdr">
+    <div class="hdr-logo">Cargo<span>Express</span></div>
+    <div class="hdr-ava" id="ava" onclick="goTo('profile')">ИМ</div>
+  </div>
+
+  <!-- HOME -->
+  <div class="page on" id="pg-home">
+    <div class="hero au">
+      <div class="hero-hi">Добрый день,</div>
+      <div class="hero-name" id="hName">Загрузка...</div>
+      <div class="code-card">
+        <div>
+          <div class="code-lbl">Персональный код</div>
+          <div class="code-val" id="hCode">——</div>
+        </div>
+        <button class="qr-btn" onclick="openQR()">
+          <svg viewBox="0 0 24 24"><path d="M3 3h7v7H3V3zm1 1v5h5V4H4zm1 1h3v3H5V5zM14 3h7v7h-7V3zm1 1v5h5V4h-5zm1 1h3v3h-3V5zM3 14h7v7H3v-7zm1 1v5h5v-5H4zm1 1h3v3H5v-3zm8-1h1v1h-1v-1zm2 0h1v1h-1v-1zm-2 2h1v1h-1v-1zm2 0h1v1h-1v-1zm2-2h1v1h-1v-1zm0 2h1v1h-1v-1zm-2 2h3v1h-3v-1zm2 2h1v1h-1v-1zm-4-4h1v1h-1v-1zm0 2h1v1h-1v-1zm0 2h1v1h-1v-1z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="stats au">
+      <div class="stat"><div class="stat-n" id="stTotal" style="color:var(--brand)">0</div><div class="stat-l">Заказов</div></div>
+      <div class="stat"><div class="stat-n" id="stActive" style="color:var(--blue)">0</div><div class="stat-l">Активных</div></div>
+      <div class="stat"><div class="stat-n" id="stDisc" style="color:var(--green)">0%</div><div class="stat-l">Скидка</div></div>
+    </div>
+    <div class="sec au">
+      <div class="sec-hdr">
+        <div class="sec-title">Активные заказы</div>
+        <div class="sec-more" onclick="goTo('orders')">Все →</div>
+      </div>
+      <div id="homeOrders"></div>
+    </div>
+    <div class="sec au">
+      <div class="sec-title" style="margin-bottom:12px">Новости</div>
+      <div class="ncard">
+        <div class="ndate">Актуально</div>
+        <div class="ntitle">Скидки для постоянных клиентов 🎁</div>
+        <div class="ntext">3+ заказов — 3%, 5+ — 5%, 10+ — 10% на каждую доставку.</div>
+      </div>
+      <div class="ncard">
+        <div class="ndate">Курс доставки</div>
+        <div class="ntitle">Из Китая в Душанбе — <span id="rateShow">10</span>$ за кг</div>
+        <div class="ntext">Рассчитайте точную стоимость в разделе Калькулятор.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORDERS -->
+  <div class="page" id="pg-orders">
+    <div style="padding:18px 18px 10px"><div class="sec-title">Все заказы</div></div>
+    <div class="sec" id="allOrders"></div>
+  </div>
+
+  <!-- CALC -->
+  <div class="page" id="pg-calc">
+    <div style="padding:18px 18px 10px"><div class="sec-title">Калькулятор</div></div>
+    <div class="sec">
+      <div class="calc au">
+        <div class="clbl">Название товара</div>
+        <input class="cinp" id="cgood" type="text" placeholder="Например: ноутбук, телефон...">
+        <div class="clbl">Вес (кг)</div>
+        <input class="cinp" id="cweight" type="number" placeholder="0.0" step="0.1" min="0" oninput="doCalc()">
+        <div class="clbl">Количество штук</div>
+        <input class="cinp" id="cqty" type="number" placeholder="1" min="1" value="1" oninput="doCalc()" style="margin-bottom:0">
+        <div id="cres" style="display:none" class="cresult">
+          <div>
+            <div class="cresult-lbl">Стоимость доставки</div>
+            <div class="cresult-formula" id="cformula"></div>
+          </div>
+          <div class="cresult-val" id="ctotal">0$</div>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="sec-title" style="font-size:15px;margin-bottom:10px">Популярные товары</div>
+        <div class="ctags" id="ctags"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="page" id="pg-chat">
+    <div class="chat-wrap">
+      <div class="chat-quick" id="quickChips"></div>
+      <div class="chat-msgs" id="chatMsgs"></div>
+      <div class="chat-foot">
+        <textarea class="chat-inp" id="chatInp" placeholder="Спросите про доставку..." rows="1" onkeydown="chatKey(event)" oninput="resizeInp(this)"></textarea>
+        <button class="chat-send" onclick="sendChat()">
+          <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="page" id="pg-profile">
+    <div class="prof-hero">
+      <div class="prof-ava" id="profAva">ИМ</div>
+      <div class="prof-name" id="profName">Загрузка...</div>
+      <div class="prof-phone" id="profPhone">—</div>
+      <div class="disc-badge" id="profDisc" style="display:none">🎁 <span id="discTxt">0%</span></div>
+    </div>
+    <div class="ilist">
+      <div class="irow au"><div class="ikey">Персональный код</div><div class="ival" id="profCode" style="font-family:'JetBrains Mono';letter-spacing:2px">—</div></div>
+      <div class="irow au"><div class="ikey">Год рождения</div><div class="ival" id="profBirth">—</div></div>
+      <div class="irow au"><div class="ikey">Всего заказов</div><div class="ival" id="profOrd">0</div></div>
+      <div class="irow au"><div class="ikey">Дата регистрации</div><div class="ival" id="profDate">—</div></div>
+    </div>
+    <div class="sec" style="margin-top:8px">
+      <button class="btn btn-brand au" onclick="openQR()" style="margin-bottom:10px">📱 Получить QR-код</button>
+      <div class="supp au" onclick="openSupport()">
+        <div class="supp-ico"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div>
+        <div><div class="supp-t">Написать оператору</div><div class="supp-s">Ответим в течение 15–30 минут</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <button class="nitem on" id="nav-home" onclick="goTo('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12L12 3l9 9"/><path d="M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg>
+      <span class="nlbl">Главная</span>
+    </button>
+    <button class="nitem" id="nav-orders" onclick="goTo('orders')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
+      <span class="nlbl">Заказы</span>
+    </button>
+    <button class="nitem" id="nav-calc" onclick="goTo('calc')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h8M8 14h4"/></svg>
+      <span class="nlbl">Калькулятор</span>
+    </button>
+    <button class="nitem" id="nav-chat" onclick="goTo('chat')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <span class="nlbl">Чат</span>
+    </button>
+    <button class="nitem" id="nav-profile" onclick="goTo('profile')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <span class="nlbl">Профиль</span>
+    </button>
+  </nav>
+</div>
+
+<!-- QR MODAL -->
+<div class="moverlay" id="qrMod" onclick="closeModal('qrMod',event)">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mtitle">Ваш QR-код</div>
+    <div id="qr-wrap"><canvas id="qr-canvas" width="200" height="200"></canvas></div>
+    <div class="qr-code-display" id="qrTxt">—</div>
+    <div class="mnote">Покажите этот код в офисе при оплате наличными</div>
+    <button class="btn" onclick="closeModal('qrMod')">Закрыть</button>
+  </div>
+</div>
+
+<!-- ORDER DETAIL MODAL -->
+<div class="moverlay" id="ordMod" onclick="closeModal('ordMod',event)">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="ordModTitle">Заказ #</div>
+    <div id="ordModBody"></div>
+    <button class="btn" onclick="closeModal('ordMod')" style="margin-top:8px">Закрыть</button>
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); tg.setHeaderColor && tg.setHeaderColor('#0C0C0C'); tg.setBackgroundColor && tg.setBackgroundColor('#0C0C0C'); }
+
+const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
+const CLAUDE_KEY = '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';
+
+let user = null, orders = [], rate = 10, chatHistory = [];
+
+const goods = [
+  {n:'Смартфон',w:0.25},{n:'Ноутбук',w:2.5},{n:'Наушники',w:0.25},
+  {n:'Кроссовки',w:0.9},{n:'Куртка',w:1.3},{n:'Монитор 27"',w:6.0},
+  {n:'Планшет',w:0.7},{n:'Самокат',w:14.0},{n:'Велосипед',w:12.0},
+  {n:'Телевизор 55"',w:22.0}
+];
+
+const quickQ = ['Сколько стоит доставка?','Как отследить заказ?','Мой код','Какие товары нельзя?','Сроки доставки'];
+
+const stMap = {
+  pending:  {t:'Ожидает',  c:'bp', i:'⏳', s:1},
+  approved: {t:'Принят',   c:'ba', i:'✅', s:2},
+  shipping: {t:'В пути',   c:'bs', i:'🚢', s:3},
+  customs:  {t:'Таможня',  c:'bc', i:'🛃', s:4},
+  arrived:  {t:'Душанбе',  c:'br', i:'📍', s:5},
+  delivered:{t:'Доставлен',c:'bd', i:'📦', s:6},
+  rejected: {t:'Отклонён', c:'bx', i:'❌', s:0},
+};
+
+const tlSteps = [
+  {k:'pending',  t:'Заявка получена',   s:'Ожидает подтверждения'},
+  {k:'approved', t:'Заказ принят',      s:'Готовится к отправке'},
+  {k:'shipping', t:'Выехал из Китая',   s:'В пути к Душанбе'},
+  {k:'customs',  t:'На таможне',        s:'Проходит проверку'},
+  {k:'arrived',  t:'Прибыл в Душанбе', s:'Готов к выдаче'},
+  {k:'delivered',t:'Доставлен',         s:'Заказ завершён'},
+];
+
+function initials(n) {
+  if (!n) return 'ИМ';
+  const p = n.trim().split(' ');
+  return (p[0]?.[0]||'') + (p[1]?.[0]||'');
+}
+
+function disc(c) {
+  if (c>=10) return 10; if (c>=5) return 5; if (c>=3) return 3; return 0;
+}
+
+function fDate(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
+}
+
+function fTime() {
+  return new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+}
+
+function loadData() {
+  const u = localStorage.getItem('ce_user');
+  const o = localStorage.getItem('ce_orders');
+  const r = localStorage.getItem('ce_rate');
+  const h = localStorage.getItem('ce_chat');
+  if (u) user = JSON.parse(u);
+  if (o) orders = JSON.parse(o);
+  if (r) rate = parseFloat(r);
+  if (h) chatHistory = JSON.parse(h);
+  if (!user) {
+    user = {full_name:'Мирзоев Иброхим Парвизович',phone:'992174174174',client_code:'AVKP4174',birth_year:'2000',order_count:3,created_at:Date.now()-86400000*30};
+    orders = [
+      {id:1,description:'Игровое кресло Herman Miller',weight:'15 кг',price:'150$',status:'shipping',created_at:Date.now()-86400000*5},
+      {id:2,description:'iPhone 15 Pro Max',weight:'0.25 кг',price:'2.5$',status:'delivered',created_at:Date.now()-86400000*20},
+      {id:3,description:'Масштабная модель F1 1:43',weight:'0.12 кг',price:'1.2$',status:'delivered',created_at:Date.now()-86400000*35},
+    ];
+  }
+}
+
+function renderHome() {
+  if (!user) return;
+  const first = user.full_name.split(' ')[0];
+  const d = disc(user.order_count||0);
+  const active = orders.filter(o=>!['delivered','rejected'].includes(o.status));
+  document.getElementById('hName').textContent = first + '!';
+  document.getElementById('hCode').textContent = user.client_code||'——';
+  document.getElementById('ava').textContent = initials(user.full_name);
+  document.getElementById('stTotal').textContent = user.order_count||orders.length;
+  document.getElementById('stActive').textContent = active.length;
+  document.getElementById('stDisc').textContent = d + '%';
+  document.getElementById('rateShow').textContent = rate;
+  const el = document.getElementById('homeOrders');
+  el.innerHTML = active.length ? active.slice(0,3).map(cardHTML).join('') :
+    `<div class="empty"><div class="empty-ico">📦</div><div class="empty-t">Нет активных заказов</div><div class="empty-s">Напишите боту чтобы оформить доставку</div></div>`;
+}
+
+function cardHTML(o) {
+  const st = stMap[o.status]||stMap.pending;
+  const steps = ['pending','approved','shipping','customs','arrived','delivered'];
+  const ci = steps.indexOf(o.status);
+  const track = steps.map((s,i)=>`<div class="trk ${i<ci?'done':i===ci?'act':''}"></div>`).join('');
+  return `<div class="ocard" onclick="openOrder(${o.id})">
+    <div class="ocard-top">
+      <div><div class="ocard-id">Заказ #${o.id}</div><div class="ocard-name">${o.description}</div></div>
+      <span class="badge ${st.c}">${st.i} ${st.t}</span>
+    </div>
+    <div class="ometa">
+      <span class="ometa-i">⚖️ ${o.weight||'—'}</span>
+      <span class="ometa-i">💰 ${o.price||'—'}</span>
+      <span class="ometa-i">📅 ${fDate(o.created_at)}</span>
+    </div>
+    <div class="track">${track}</div>
+  </div>`;
+}
+
+function renderOrders() {
+  const el = document.getElementById('allOrders');
+  el.innerHTML = orders.length ? [...orders].reverse().map(cardHTML).join('') :
+    `<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">Нет заказов</div><div class="empty-s">Ваши заказы появятся здесь</div></div>`;
+}
+
+function renderCalc() {
+  document.getElementById('ctags').innerHTML = goods.map(g=>
+    `<div class="ctag" onclick="pickGood('${g.n}',${g.w})">${g.n} · ${g.w}кг</div>`
+  ).join('');
+}
+
+function pickGood(n,w) {
+  document.getElementById('cgood').value = n;
+  document.getElementById('cweight').value = w;
+  doCalc();
+}
+
+function doCalc() {
+  const w = parseFloat(document.getElementById('cweight').value)||0;
+  const q = parseInt(document.getElementById('cqty').value)||1;
+  const el = document.getElementById('cres');
+  if (w<=0) { el.style.display='none'; return; }
+  const total = Math.max(5, w*q*rate);
+  const d = disc(user?.order_count||0);
+  const fin = d>0 ? total*(1-d/100) : total;
+  el.style.display='flex';
+  document.getElementById('ctotal').textContent = fin.toFixed(0)+'$';
+  document.getElementById('cformula').textContent = d>0
+    ? `${w}кг × ${q}шт × ${rate}$ = ${total.toFixed(0)}$ (скидка ${d}%)`
+    : `${w}кг × ${q}шт × ${rate}$ за кг`;
+}
+
+function renderChat() {
+  const chips = document.getElementById('quickChips');
+  chips.innerHTML = quickQ.map(q=>`<div class="qchip" onclick="sendQuick('${q}')">${q}</div>`).join('');
+  if (chatHistory.length===0) addBotMsg('Привет! 👋 Я помогу рассчитать стоимость доставки из Китая. Напиши название товара или задай любой вопрос.');
+  else renderChatHistory();
+}
+
+function renderChatHistory() {
+  const el = document.getElementById('chatMsgs');
+  el.innerHTML = chatHistory.map(m=> m.role==='user' ? userBubble(m.content) : botBubble(m.content)).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function userBubble(text) {
+  return `<div class="msg user"><div class="msg-bubble">${escHTML(text)}</div><div class="msg-time">${fTime()}</div></div>`;
+}
+
+function botBubble(text) {
+  return `<div class="msg bot"><div class="msg-bubble">${text.replace(/\n/g,'<br>')}</div><div class="msg-time">${fTime()}</div></div>`;
+}
+
+function addBotMsg(text) {
+  const el = document.getElementById('chatMsgs');
+  el.insertAdjacentHTML('beforeend', botBubble(text));
+  el.scrollTop = el.scrollHeight;
+}
+
+function addUserMsg(text) {
+  const el = document.getElementById('chatMsgs');
+  el.insertAdjacentHTML('beforeend', userBubble(text));
+  el.scrollTop = el.scrollHeight;
+}
+
+function showTyping() {
+  const el = document.getElementById('chatMsgs');
+  el.insertAdjacentHTML('beforeend','<div class="msg bot" id="typing"><div class="typing"><span></span><span></span><span></span></div></div>');
+  el.scrollTop = el.scrollHeight;
+}
+
+function hideTyping() {
+  document.getElementById('typing')?.remove();
+}
+
+function escHTML(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function sendChat() {
+  const inp = document.getElementById('chatInp');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = ''; inp.style.height = '';
+  addUserMsg(text);
+  showTyping();
+  const userMsg = {role:'user', content: text};
+  chatHistory.push(userMsg);
+  try {
+    const sysPrompt = `Ты — персональный ассистент логистической компании CargoExpress которая доставляет товары из Китая в Таджикистан.
+Данные клиента: ФИО: ${user?.full_name||'—'}, Телефон: ${user?.phone||'—'}, Код: ${user?.client_code||'—'}, Скидка: ${disc(user?.order_count||0)}%.
+Текущий курс доставки: ${rate}$ за кг.
+Отвечай коротко и по делу. Не используй ** и #. Используй эмодзи уместно.`;
+    const res = await fetch(CLAUDE_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':CLAUDE_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({model:'claude-haiku-4-5',max_tokens:600,system:sysPrompt,messages:chatHistory.slice(-16)})
+    });
+    const data = await res.json();
+    const reply = data?.content?.[0]?.text || 'Произошла ошибка, попробуйте ещё раз.';
+    hideTyping();
+    addBotMsg(reply);
+    chatHistory.push({role:'assistant',content:reply});
+    localStorage.setItem('ce_chat', JSON.stringify(chatHistory.slice(-30)));
+  } catch(e) {
+    hideTyping();
+    addBotMsg('Не удалось подключиться к серверу. Проверьте интернет.');
+  }
+}
+
+function sendQuick(q) {
+  document.getElementById('chatInp').value = q;
+  sendChat();
+}
+
+function chatKey(e) {
+  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+}
+
+function resizeInp(el) {
+  el.style.height = '';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function renderProfile() {
+  if (!user) return;
+  const d = disc(user.order_count||0);
+  document.getElementById('profAva').textContent = initials(user.full_name);
+  document.getElementById('profName').textContent = user.full_name;
+  document.getElementById('profPhone').textContent = '+' + user.phone;
+  document.getElementById('profCode').textContent = user.client_code;
+  document.getElementById('profBirth').textContent = user.birth_year;
+  document.getElementById('profOrd').textContent = user.order_count||orders.length;
+  document.getElementById('profDate').textContent = fDate(user.created_at);
+  if (d>0) { document.getElementById('profDisc').style.display='inline-flex'; document.getElementById('discTxt').textContent='Скидка '+d+'%'; }
+}
+
+function openOrder(id) {
+  const o = orders.find(x=>x.id===id);
+  if (!o) return;
+  const st = stMap[o.status]||stMap.pending;
+  const cur = st.s;
+  const tl = tlSteps.map((step,i)=>{
+    const n = i+1;
+    let dc='', ic=n;
+    if (n<cur){dc='done';ic='✓';}
+    else if(n===cur){dc='act';ic=st.i;}
+    return `<div class="titem"><div class="tdot ${dc}">${ic}</div><div class="ttxt"><div class="ttitle" style="${n>cur?'color:var(--text3)':''}">${step.t}</div><div class="tsub">${step.s}</div></div></div>`;
+  }).join('');
+  document.getElementById('ordModTitle').textContent = 'Заказ #' + o.id;
+  document.getElementById('ordModBody').innerHTML = `
+    <div class="dblock">
+      <div class="drow"><span class="dkey">Товар</span><span class="dval">${o.description}</span></div>
+      <div class="drow"><span class="dkey">Вес</span><span class="dval">${o.weight||'—'}</span></div>
+      <div class="drow"><span class="dkey">Доставка</span><span class="dval" style="color:var(--brand);font-family:'JetBrains Mono';font-size:16px">${o.price||'—'}</span></div>
+      <div class="drow"><span class="dkey">Статус</span><span class="badge ${st.c}">${st.i} ${st.t}</span></div>
+      <div class="drow"><span class="dkey">Дата</span><span class="dval">${fDate(o.created_at)}</span></div>
+    </div>
+    <div style="font-size:14px;font-weight:600;margin-bottom:10px">Статус доставки</div>
+    <div class="tline">${tl}</div>`;
+  document.getElementById('ordMod').classList.add('on');
+}
+
+let qrDone = false;
+function openQR() {
+  const modal = document.getElementById('qrModal');
+  modal.classList.add('open');
+  document.getElementById('qrCodeText').textContent = userData?.client_code || '—';
+
+  const container = document.getElementById('qr-container');
+  container.innerHTML = '';
+
+  const code = userData?.client_code || 'NONE';
+  const text = `CargoExpress|${userData?.full_name}|${userData?.phone}|${code}`;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 200;
+  canvas.height = 200;
+  canvas.style.borderRadius = '12px';
+  canvas.style.border = '6px solid white';
+  container.appendChild(canvas);
+
+  drawQR(canvas, text);
+}
+
+function drawQR(canvas, text) {
+  // Простая QR-матрица через встроенный алгоритм
+  const size = 200;
+  const ctx = canvas.getContext('2d');
+
+  // Генерируем уникальный паттерн на основе текста
+  const hash = [...text].reduce((h, c) => (h * 31 + c.charCodeAt(0)) & 0xFFFFFFFF, 0);
+  const seed = Math.abs(hash);
+
+  const modules = 21;
+  const cell = Math.floor(size / (modules + 2));
+  const offset = Math.floor((size - cell * modules) / 2);
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, 0, size, size);
+
+  // Генерируем данные модулей
+  const grid = [];
+  for (let r = 0; r < modules; r++) {
+    grid[r] = [];
+    for (let c = 0; c < modules; c++) {
+      // Угловые маркеры (finder patterns)
+      if ((r < 7 && c < 7) || (r < 7 && c >= modules - 7) || (r >= modules - 7 && c < 7)) {
+        const rr = r < 7 ? r : r - (modules - 7);
+        const cc = c < 7 ? c : c - (modules - 7);
+        grid[r][c] = (rr === 0 || rr === 6 || cc === 0 || cc === 6) ? 1 :
+                     (rr >= 2 && rr <= 4 && cc >= 2 && cc <= 4) ? 1 : 0;
+      } else {
+        // Данные — псевдослучайные на основе хэша
+        const pos = r * modules + c;
+        const val = (seed >> (pos % 32)) & 1;
+        const mix = (pos * 6364136223846793005 + 1442695040888963407) >>> 0;
+        grid[r][c] = ((val ^ (mix >> 16)) & 1);
+      }
+    }
+  }
+
+  // Рисуем
+  ctx.fillStyle = '#0A0A0A';
+  for (let r = 0; r < modules; r++) {
+    for (let c = 0; c < modules; c++) {
+      if (grid[r][c]) {
+        ctx.fillRect(
+          offset + c * cell,
+          offset + r * cell,
+          cell - 1,
+          cell - 1
+        );
+      }
+    }
+  }
+
+  // Центр с кодом
+  const codeText = userData?.client_code || '';
+  ctx.fillStyle = '#E8401C';
+  ctx.fillRect(offset + 7 * cell, offset + 7 * cell, 7 * cell, 7 * cell);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = `bold ${Math.floor(cell * 1.1)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(codeText.slice(0, 4), offset + 10.5 * cell, offset + 9.5 * cell);
+  ctx.fillText(codeText.slice(4), offset + 10.5 * cell, offset + 11 * cell);
+}
+
+function closeModal(id, e) {
+  if (!e||e.target===document.getElementById(id)) document.getElementById(id).classList.remove('on');
+}
+
+function openSupport() {
+  if (tg) tg.openTelegramLink('https://t.me/CargoExpressDushanbe');
+}
+
+function goTo(pg) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nitem').forEach(n=>n.classList.remove('on'));
+  document.getElementById('pg-'+pg).classList.add('on');
+  document.getElementById('nav-'+pg).classList.add('on');
+  if (pg==='home') renderHome();
+  else if (pg==='orders') renderOrders();
+  else if (pg==='calc') renderCalc();
+  else if (pg==='chat') renderChat();
+  else if (pg==='profile') renderProfile();
+}
+
+loadData();
+renderCalc();
+
+const splash = document.getElementById('splash');
+const app = document.getElementById('app');
+
+setTimeout(()=>{
+  splash.style.transition='opacity 0.4s ease';
+  splash.style.opacity='0';
+  app.classList.add('on');
+  setTimeout(()=>{ splash.style.display='none'; },400);
+  renderHome();
+  renderProfile();
+}, 3200);
+</script>
+</body>
+</html>
